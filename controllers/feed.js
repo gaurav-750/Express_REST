@@ -2,20 +2,21 @@ const { validationResult } = require("express-validator");
 const Post = require("../models/post");
 
 exports.getPosts = (req, res, next) => {
-  res.status(200).json({
-    posts: [
-      {
-        _id: "1",
-        title: "First Post",
-        content: "This is the first post!",
-        imageUrl: "images/duck.jpg",
-        creator: {
-          name: "Gaurav",
-        },
-        createdAt: new Date(),
-      },
-    ],
-  });
+  Post.find()
+    .then((posts) => {
+      return res.status(200).json({
+        message: "Fetched posts successfully",
+        posts: posts,
+      });
+    })
+    .catch((err) => {
+      console.log("[controllers/feed.js] err:", err);
+
+      if (!err.statusCode) {
+        err.statusCode = 500;
+      }
+      next(err);
+    });
 };
 
 exports.createPost = (req, res, next) => {
@@ -37,7 +38,7 @@ exports.createPost = (req, res, next) => {
   Post.create({
     title: title,
     content: content,
-    imageUrl: "images/duck.jpg",
+    imageUrl: "images/book-01.jpg",
     creator: { name: "Gaurav" },
   })
     .then((result) => {
@@ -55,8 +56,35 @@ exports.createPost = (req, res, next) => {
         err.statusCode = 500;
       }
 
-      //pass the error to the next middleware
       //here we use next(err) instead of throw err because we are inside a promise
+      next(err);
+    });
+};
+
+exports.getPost = (req, res, next) => {
+  console.log("[controllers/feed.js] req.params:", req.params);
+  const { postId } = req.params;
+
+  Post.findById(postId)
+    .then((post) => {
+      if (!post) {
+        const err = new Error("Could not find post");
+        err.statusCode = 404;
+        throw err;
+      }
+
+      res.status(200).json({
+        message: "Post fetched successfully",
+        post: post,
+      });
+    })
+    .catch((err) => {
+      console.log("[controllers/feed.js] err:", err);
+
+      if (!err.statusCode) {
+        err.statusCode = 500;
+      }
+
       next(err);
     });
 };
