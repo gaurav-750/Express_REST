@@ -30,4 +30,7 @@ router.put(
   feedController.editPost
 );
 
+//delete post
+router.delete("/post/:postId", feedController.deletePost);
+
 module.exports = router;

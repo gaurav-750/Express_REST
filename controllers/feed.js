@@ -164,3 +164,37 @@ exports.editPost = (req, res, next) => {
       next(err);
     });
 };
+
+exports.deletePost = (req, res, next) => {
+  console.log("[controllers/feed.js] req.params:", req.params);
+  const { postId } = req.params;
+
+  Post.findById(postId)
+    .then((post) => {
+      //check if image to be deleted is being deleted by the creator
+      if (!post) {
+        const err = new Error("Could not find post");
+        err.statusCode = 404;
+        throw err;
+      }
+
+      //remove the image
+      removeImage(post.imageUrl);
+
+      return Post.findByIdAndDelete(postId);
+    })
+    .then((result) => {
+      console.log("[controllers/feed.js] result:", result);
+      res.status(200).json({
+        message: "Post deleted successfully",
+      });
+    })
+    .catch((err) => {
+      console.log("[controllers/feed.js] err:", err);
+
+      if (!err.statusCode) {
+        err.statusCode = 500;
+      }
+      next(err);
+    });
+};
