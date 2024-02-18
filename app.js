@@ -2,6 +2,9 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 
+//database
+require("./configs/database");
+
 const feedRoutes = require("./routes/feed");
 
 const app = express();
