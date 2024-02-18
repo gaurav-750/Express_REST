@@ -28,10 +28,9 @@ exports.createPost = (req, res, next) => {
     //that means there are errors
     console.log("[controllers/feed.js] errors:", errors.array());
 
-    return res.status(422).json({
-      message: "Validation failed, entered data is incorrect",
-      errors: errors.array(),
-    });
+    const err = new Error("Validation failed, entered data is incorrect");
+    err.statusCode = 422;
+    throw err; //this will be caught by the error handling middleware, here we dont use nexct(err)
   }
 
   //create and add post to DB
@@ -51,8 +50,13 @@ exports.createPost = (req, res, next) => {
     })
     .catch((err) => {
       console.log("[controllers/feed.js] err:", err);
-      res.status(500).json({
-        message: "Creating the post failed!",
-      });
+
+      if (!err.statusCode) {
+        err.statusCode = 500;
+      }
+
+      //pass the error to the next middleware
+      //here we use next(err) instead of throw err because we are inside a promise
+      next(err);
     });
 };
