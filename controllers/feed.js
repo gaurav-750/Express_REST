@@ -23,6 +23,9 @@ exports.createPost = (req, res, next) => {
   console.log("[controllers/feed.js] req.body:", req.body);
   const { title, content } = req.body;
 
+  console.log("[controllers/feed.js] req.file:", req.file);
+  const image = req.file;
+
   const errors = validationResult(req); //extracts the validation errors from a request and makes them available in a Result object.
 
   if (!errors.isEmpty()) {
@@ -34,11 +37,21 @@ exports.createPost = (req, res, next) => {
     throw err; //this will be caught by the error handling middleware, here we dont use nexct(err)
   }
 
+  if (!image) {
+    //if image is not present
+    const err = new Error("Invalid Image");
+    err.statusCode = 422;
+    throw err;
+  }
+
+  //! windows path fix
+  const imageUrl = image.path.replace("\\", "/");
+
   //create and add post to DB
   Post.create({
     title: title,
     content: content,
-    imageUrl: "images/book-01.jpg",
+    imageUrl: imageUrl,
     creator: { name: "Gaurav" },
   })
     .then((result) => {

@@ -1,6 +1,8 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
+const multer = require("multer");
+const { v4: uuid4 } = require("uuid");
 
 const path = require("path");
 
@@ -10,14 +12,42 @@ require("dotenv").config();
 //database
 require("./configs/database");
 
-const feedRoutes = require("./routes/feed");
-
 const app = express();
 
 app.use(cors());
 
 //body parser middleware
 app.use(bodyParser.json());
+
+//* multer setup
+const fileStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "images");
+  },
+
+  filename: (req, file, cb) => {
+    cb(null, uuid4() + "-" + file.originalname);
+  },
+});
+
+const fileFilter = (req, file, cb) => {
+  if (
+    file.mimetype === "image/png" ||
+    file.mimetype === "image/jpg" ||
+    file.mimetype === "image/jpeg"
+  ) {
+    cb(null, true);
+  } else {
+    cb(null, false);
+  }
+};
+
+app.use(
+  multer({
+    storage: fileStorage,
+    fileFilter: fileFilter,
+  }).single("image")
+);
 
 //
 app.use("/images", express.static(path.join(__dirname, "images")));
@@ -33,7 +63,7 @@ app.use("/images", express.static(path.join(__dirname, "images")));
 //   next();
 // });
 
-app.use("/feed", feedRoutes);
+app.use("/feed", require("./routes/feed"));
 
 //! error handling middleware
 app.use((error, req, res, next) => {
