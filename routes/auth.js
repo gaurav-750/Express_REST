@@ -13,12 +13,13 @@ router.post(
     body("email")
       .isEmail()
       .withMessage("Please enter a valid email")
-      .custom((value, { req }) => {
-        User.findOne({ email: value }).then((user) => {
-          if (user) {
-            throw new Error("Email already exists");
-          }
-        });
+      .custom(async (value) => {
+        const user = await User.findOne({ email: value });
+        if (user) {
+          throw new Error("Email already exists");
+        }
+
+        return true;
       }),
 
     body("password")

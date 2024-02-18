@@ -19,7 +19,8 @@ const UserSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      required: true,
+      // required: true,
+      default: "I'm new!",
     },
 
     //* reference to Post
