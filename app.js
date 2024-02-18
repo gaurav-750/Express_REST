@@ -63,6 +63,7 @@ app.use("/images", express.static(path.join(__dirname, "images")));
 //   next();
 // });
 
+app.use("/auth", require("./routes/auth"));
 app.use("/feed", require("./routes/feed"));
 
 //! error handling middleware
@@ -71,9 +72,11 @@ app.use((error, req, res, next) => {
 
   const status = error.statusCode || 500;
   const message = error.message;
+  const data = error.data;
 
   res.status(status).json({
     message: message,
+    data: data,
   });
 });
 

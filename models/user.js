@@ -36,5 +36,5 @@ const UserSchema = new mongoose.Schema(
 );
 
 //create Post model
-const Post = mongoose.model("Post", PostSchema);
-module.exports = Post;
+const User = mongoose.model("User", UserSchema);
+module.exports = User;
