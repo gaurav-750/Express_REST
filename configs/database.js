@@ -1,8 +1,6 @@
 const mongoose = require("mongoose");
 
-const uri =
-  "mongodb+srv://somanigaurav:6owytrHAY2W2K1Zr@social.d9s3efh.mongodb.net/shop?retryWrites=true&w=majority";
-
+const uri = process.env.DATABASE_URI;
 mongoose.connect(uri);
 
 const db = mongoose.connection;
