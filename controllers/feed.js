@@ -2,6 +2,7 @@ const { validationResult } = require("express-validator");
 const Post = require("../models/post");
 
 const { removeImage } = require("../utils/image");
+const User = require("../models/user");
 
 const ITEMS_PER_PAGE = 2;
 
@@ -59,19 +60,33 @@ exports.createPost = (req, res, next) => {
   //! windows path fix
   const imageUrl = image.path.replace("\\", "/");
 
+  let createdPost;
   //create and add post to DB
   Post.create({
     title: title,
     content: content,
     imageUrl: imageUrl,
-    creator: { name: "Gaurav" },
+    creator: req.userId, //* we get this 'userId' from is-auth middleware
   })
-    .then((result) => {
-      console.log("[controllers/feed.js/createPost] result:", result);
+    .then((post) => {
+      console.log("[controllers/feed.js/createPost] created post:", post);
+      createdPost = post;
 
+      //add this post to the user's posts
+      return User.findById(req.userId);
+    })
+    .then((user) => {
+      user.posts.push(createdPost);
+      return user.save();
+    })
+    .then((user) => {
       res.status(201).json({
         message: "Post created successfully!",
-        post: result,
+        post: createdPost,
+        creator: {
+          _id: user._id,
+          name: user.name,
+        },
       });
     })
     .catch((err) => {
