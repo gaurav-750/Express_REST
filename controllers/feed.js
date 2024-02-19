@@ -26,27 +26,23 @@ exports.getPosts = (req, res, next) => {
       });
     })
     .catch((err) => {
-      console.log("[controllers/feed.js] err:", err);
-
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
+      console.log("[controllers/feed.js/getPosts] err:", err);
       next(err);
     });
 };
 
 exports.createPost = (req, res, next) => {
-  console.log("[controllers/feed.js] req.body:", req.body);
+  console.log("[controllers/feed.js/createPost] req.body:", req.body);
   const { title, content } = req.body;
 
-  console.log("[controllers/feed.js] req.file:", req.file);
+  console.log("[controllers/feed.js/createPost] req.file:", req.file);
   const image = req.file;
 
   const errors = validationResult(req); //extracts the validation errors from a request and makes them available in a Result object.
 
   if (!errors.isEmpty()) {
     //that means there are errors
-    console.log("[controllers/feed.js] errors:", errors.array());
+    console.log("[controllers/feed.js/createPost] errors:", errors.array());
 
     const err = new Error("Validation failed, entered data is incorrect");
     err.statusCode = 422;
@@ -71,7 +67,7 @@ exports.createPost = (req, res, next) => {
     creator: { name: "Gaurav" },
   })
     .then((result) => {
-      console.log("[controllers/feed.js] result:", result);
+      console.log("[controllers/feed.js/createPost] result:", result);
 
       res.status(201).json({
         message: "Post created successfully!",
@@ -79,11 +75,7 @@ exports.createPost = (req, res, next) => {
       });
     })
     .catch((err) => {
-      console.log("[controllers/feed.js] err:", err);
-
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
+      console.log("[controllers/feed.js/createPost] err:", err);
 
       //here we use next(err) instead of throw err because we are inside a promise
       next(err);
@@ -91,7 +83,7 @@ exports.createPost = (req, res, next) => {
 };
 
 exports.getPost = (req, res, next) => {
-  console.log("[controllers/feed.js] req.params:", req.params);
+  console.log("[controllers/feed.js/getPost] req.params:", req.params);
   const { postId } = req.params;
 
   Post.findById(postId)
@@ -108,24 +100,19 @@ exports.getPost = (req, res, next) => {
       });
     })
     .catch((err) => {
-      console.log("[controllers/feed.js] err:", err);
-
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
-
+      console.log("[controllers/feed.js/getPost] err:", err);
       next(err);
     });
 };
 
 exports.editPost = (req, res, next) => {
-  console.log("[controllers/feed.js] req.body:", req.body);
+  console.log("[controllers/feed.js/editPost] req.body:", req.body);
   const { title, content } = req.body;
   let imageUrl = req.body.image;
 
   const { postId } = req.params;
 
-  console.log("[controllers/feed.js] req.file:", req.file);
+  console.log("[controllers/feed.js/editPost] req.file:", req.file);
   let image = req.file;
 
   if (image) {
@@ -136,7 +123,7 @@ exports.editPost = (req, res, next) => {
 
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    console.log("[controllers/feed.js] errors:", errors.array());
+    console.log("[controllers/feed.js/editPost] errors:", errors.array());
 
     const err = new Error("Validation failed, entered data is incorrect");
     err.statusCode = 422;
@@ -163,24 +150,20 @@ exports.editPost = (req, res, next) => {
       return post.save();
     })
     .then((result) => {
-      console.log("[controllers/feed.js] result:", result);
+      console.log("[controllers/feed.js/editPost] result:", result);
       res.status(200).json({
         message: "Post updated successfully",
         post: result,
       });
     })
     .catch((err) => {
-      console.log("[controllers/feed.js] err:", err);
-
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
+      console.log("[controllers/feed.js/editPost] err:", err);
       next(err);
     });
 };
 
 exports.deletePost = (req, res, next) => {
-  console.log("[controllers/feed.js] req.params:", req.params);
+  console.log("[controllers/feed.js/deletePost] req.params:", req.params);
   const { postId } = req.params;
 
   Post.findById(postId)
@@ -198,17 +181,13 @@ exports.deletePost = (req, res, next) => {
       return Post.findByIdAndDelete(postId);
     })
     .then((result) => {
-      console.log("[controllers/feed.js] result:", result);
+      console.log("[controllers/feed.js/deletePost] result:", result);
       res.status(200).json({
         message: "Post deleted successfully",
       });
     })
     .catch((err) => {
-      console.log("[controllers/feed.js] err:", err);
-
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
+      console.log("[controllers/feed.js/deletePost] err:", err);
       next(err);
     });
 };
