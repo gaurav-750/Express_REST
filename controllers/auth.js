@@ -87,3 +87,59 @@ exports.login = (req, res, next) => {
       next(err);
     });
 };
+
+exports.getUserStatus = (req, res, next) => {
+  User.findById(req.userId)
+    .then((user) => {
+      if (!user) {
+        const err = new Error("User not found!");
+        err.statusCode = 404;
+        throw err;
+      }
+
+      return res.status(200).json({
+        status: user.status,
+      });
+    })
+    .catch((err) => {
+      console.log("[controllers/auth.js/getUserStatus] err:", err);
+      next(err);
+    });
+};
+
+exports.updateUserStatus = (req, res, next) => {
+  console.log("[controllers/auth.js/updateUserStatus] req.body:", req.body);
+  const { status } = req.body;
+
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    console.log(
+      "[controllers/auth.js/updateUserStatus] errors:",
+      errors.array()
+    );
+    const err = new Error("Validation failed, entered data is incorrect");
+    err.statusCode = 422;
+    throw err;
+  }
+
+  User.findById(req.userId)
+    .then((user) => {
+      if (!user) {
+        const err = new Error("User not found!");
+        err.statusCode = 404;
+        throw err;
+      }
+
+      user.status = status;
+      return user.save();
+    })
+    .then((user) => {
+      return res.status(200).json({
+        message: "User status updated successfully",
+      });
+    })
+    .catch((err) => {
+      console.log("[controllers/auth.js/updateUserStatus] err:", err);
+      next(err);
+    });
+};

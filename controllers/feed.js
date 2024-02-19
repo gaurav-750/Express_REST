@@ -210,6 +210,17 @@ exports.deletePost = (req, res, next) => {
     })
     .then((result) => {
       console.log("[controllers/feed.js/deletePost] result:", result);
+
+      //!remove the post from the user's posts also
+      return User.findById(req.userId);
+    })
+    .then((user) => {
+      user.posts.pull(postId);
+      return user.save();
+    })
+    .then((result) => {
+      console.log("[controllers/feed.js/deletePost] result:", result);
+
       res.status(200).json({
         message: "Post deleted successfully",
       });
