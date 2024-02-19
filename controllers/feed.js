@@ -154,6 +154,13 @@ exports.editPost = (req, res, next) => {
         throw err;
       }
 
+      //check if the user is the creator of the post, then only he can edit the post
+      if (post.creator.toString() !== req.userId.toString()) {
+        const err = new Error("You are not authorized to edit this post!");
+        err.statusCode = 403;
+        throw err;
+      }
+
       if (imageUrl !== post.imageUrl) {
         //that means new image is uploaded
         removeImage(post.imageUrl);
@@ -187,6 +194,12 @@ exports.deletePost = (req, res, next) => {
       if (!post) {
         const err = new Error("Could not find post");
         err.statusCode = 404;
+        throw err;
+      }
+
+      if (post.creator.toString() !== req.userId.toString()) {
+        const err = new Error("You are not authorized to delete this post!");
+        err.statusCode = 403;
         throw err;
       }
 
