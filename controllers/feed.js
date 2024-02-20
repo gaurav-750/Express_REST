@@ -6,33 +6,28 @@ const User = require("../models/user");
 
 const ITEMS_PER_PAGE = 2;
 
-exports.getPosts = (req, res, next) => {
+exports.getPosts = async (req, res, next) => {
   const currentPage = req.query.page || 1;
 
-  let totalItems;
-  Post.find()
-    .countDocuments()
-    .then((count) => {
-      totalItems = count;
+  try {
+    const totalItems = await Post.find().countDocuments();
+    const posts = await Post.find()
+      .populate("creator")
+      .skip((currentPage - 1) * ITEMS_PER_PAGE)
+      .limit(ITEMS_PER_PAGE);
 
-      return Post.find()
-        .skip((currentPage - 1) * ITEMS_PER_PAGE)
-        .limit(ITEMS_PER_PAGE);
-    })
-    .then((posts) => {
-      return res.status(200).json({
-        message: "Fetched posts successfully",
-        posts: posts,
-        totalItems: totalItems,
-      });
-    })
-    .catch((err) => {
-      console.log("[controllers/feed.js/getPosts] err:", err);
-      next(err);
+    return res.status(200).json({
+      message: "Fetched posts successfully",
+      posts: posts,
+      totalItems: totalItems,
     });
+  } catch (error) {
+    console.log("[controllers/feed.js/getPosts] error:", error);
+    next(error);
+  }
 };
 
-exports.createPost = (req, res, next) => {
+exports.createPost = async (req, res, next) => {
   console.log("[controllers/feed.js/createPost] req.body:", req.body);
   const { title, content } = req.body;
 
@@ -60,67 +55,58 @@ exports.createPost = (req, res, next) => {
   //! windows path fix
   const imageUrl = image.path.replace("\\", "/");
 
-  let createdPost;
-  //create and add post to DB
-  Post.create({
-    title: title,
-    content: content,
-    imageUrl: imageUrl,
-    creator: req.userId, //* we get this 'userId' from is-auth middleware
-  })
-    .then((post) => {
-      console.log("[controllers/feed.js/createPost] created post:", post);
-      createdPost = post;
-
-      //add this post to the user's posts
-      return User.findById(req.userId);
-    })
-    .then((user) => {
-      user.posts.push(createdPost);
-      return user.save();
-    })
-    .then((user) => {
-      res.status(201).json({
-        message: "Post created successfully!",
-        post: createdPost,
-        creator: {
-          _id: user._id,
-          name: user.name,
-        },
-      });
-    })
-    .catch((err) => {
-      console.log("[controllers/feed.js/createPost] err:", err);
-
-      //here we use next(err) instead of throw err because we are inside a promise
-      next(err);
+  try {
+    //create and add post to DB
+    const post = await Post.create({
+      title: title,
+      content: content,
+      imageUrl: imageUrl,
+      creator: req.userId, //* we get this 'userId' from is-auth middleware
     });
+    console.log("[controllers/feed.js/createPost] created post:", post);
+
+    const user = await User.findById(req.userId);
+
+    user.posts.push(post);
+    await user.save();
+
+    res.status(201).json({
+      message: "Post created successfully!",
+      post: post,
+      creator: {
+        _id: user._id,
+        name: user.name,
+      },
+    });
+  } catch (error) {
+    console.log("[controllers/feed.js/createPost] error:", error);
+    next(error);
+  }
 };
 
-exports.getPost = (req, res, next) => {
+exports.getPost = async (req, res, next) => {
   console.log("[controllers/feed.js/getPost] req.params:", req.params);
   const { postId } = req.params;
 
-  Post.findById(postId)
-    .then((post) => {
-      if (!post) {
-        const err = new Error("Could not find post");
-        err.statusCode = 404;
-        throw err;
-      }
+  try {
+    const post = await Post.findById(postId);
+    if (!post) {
+      const err = new Error("Could not find post");
+      err.statusCode = 404;
+      throw err;
+    }
 
-      res.status(200).json({
-        message: "Post fetched successfully",
-        post: post,
-      });
-    })
-    .catch((err) => {
-      console.log("[controllers/feed.js/getPost] err:", err);
-      next(err);
+    res.status(200).json({
+      message: "Post fetched successfully",
+      post: post,
     });
+  } catch (error) {
+    console.log("[controllers/feed.js/getPost] err:", error);
+    next(error);
+  }
 };
 
-exports.editPost = (req, res, next) => {
+exports.editPost = async (req, res, next) => {
   console.log("[controllers/feed.js/editPost] req.body:", req.body);
   const { title, content } = req.body;
   let imageUrl = req.body.image;
@@ -145,88 +131,80 @@ exports.editPost = (req, res, next) => {
     throw err;
   }
 
-  //Now we can update Post
-  Post.findById(postId)
-    .then((post) => {
-      if (!post) {
-        const err = new Error("Could not find post");
-        err.statusCode = 404;
-        throw err;
-      }
+  try {
+    const post = await Post.findById(postId);
+    if (!post) {
+      const err = new Error("Could not find post");
+      err.statusCode = 404;
+      throw err;
+    }
 
-      //check if the user is the creator of the post, then only he can edit the post
-      if (post.creator.toString() !== req.userId.toString()) {
-        const err = new Error("You are not authorized to edit this post!");
-        err.statusCode = 403;
-        throw err;
-      }
+    //check if the user is the creator of the post, then only he can edit the post
+    if (post.creator.toString() !== req.userId.toString()) {
+      const err = new Error("You are not authorized to edit this post!");
+      err.statusCode = 403;
+      throw err;
+    }
 
-      if (imageUrl !== post.imageUrl) {
-        //that means new image is uploaded
-        removeImage(post.imageUrl);
-      }
+    if (imageUrl !== post.imageUrl) {
+      //that means new image is uploaded
+      removeImage(post.imageUrl);
+    }
 
-      post.title = title;
-      post.imageUrl = imageUrl;
-      post.content = content;
-      return post.save();
-    })
-    .then((result) => {
-      console.log("[controllers/feed.js/editPost] result:", result);
-      res.status(200).json({
-        message: "Post updated successfully",
-        post: result,
-      });
-    })
-    .catch((err) => {
-      console.log("[controllers/feed.js/editPost] err:", err);
-      next(err);
+    post.title = title;
+    post.imageUrl = imageUrl;
+    post.content = content;
+    await post.save();
+
+    console.log("[controllers/feed.js/editPost] post:", post);
+    res.status(200).json({
+      message: "Post updated successfully",
+      post: post,
     });
+  } catch (error) {
+    console.log("[controllers/feed.js/editPost] err:", error);
+    next(error);
+  }
 };
 
-exports.deletePost = (req, res, next) => {
+exports.deletePost = async (req, res, next) => {
   console.log("[controllers/feed.js/deletePost] req.params:", req.params);
   const { postId } = req.params;
 
-  Post.findById(postId)
-    .then((post) => {
-      //check if image to be deleted is being deleted by the creator
-      if (!post) {
-        const err = new Error("Could not find post");
-        err.statusCode = 404;
-        throw err;
-      }
+  try {
+    const post = await Post.findById(postId);
+    //check if image to be deleted is being deleted by the creator
+    if (!post) {
+      const err = new Error("Could not find post");
+      err.statusCode = 404;
+      throw err;
+    }
 
-      if (post.creator.toString() !== req.userId.toString()) {
-        const err = new Error("You are not authorized to delete this post!");
-        err.statusCode = 403;
-        throw err;
-      }
+    if (post.creator.toString() !== req.userId.toString()) {
+      const err = new Error("You are not authorized to delete this post!");
+      err.statusCode = 403;
+      throw err;
+    }
 
-      //remove the image
-      removeImage(post.imageUrl);
+    //remove the image
+    removeImage(post.imageUrl);
 
-      return Post.findByIdAndDelete(postId);
-    })
-    .then((result) => {
-      console.log("[controllers/feed.js/deletePost] result:", result);
+    //delete the post
+    let result = await Post.findByIdAndDelete(postId);
+    console.log("[controllers/feed.js/deletePost] result:", result);
 
-      //!remove the post from the user's posts also
-      return User.findById(req.userId);
-    })
-    .then((user) => {
-      user.posts.pull(postId);
-      return user.save();
-    })
-    .then((result) => {
-      console.log("[controllers/feed.js/deletePost] result:", result);
+    //!remove the post from the user's posts also
+    const user = await User.findById(req.userId);
+    user.posts.pull(postId);
+    result = await user.save();
 
-      res.status(200).json({
-        message: "Post deleted successfully",
-      });
-    })
-    .catch((err) => {
-      console.log("[controllers/feed.js/deletePost] err:", err);
-      next(err);
+    console.log("[controllers/feed.js/deletePost] result:", result);
+
+    res.status(200).json({
+      message: "Post deleted successfully",
     });
+  } catch (error) {
+    console.log("[controllers/feed.js/deletePost] err:", error);
+    next(error);
+  }
 };
