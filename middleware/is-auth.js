@@ -5,7 +5,7 @@ exports.isAuthenticated = (req, res, next) => {
   //and check if it is valid
 
   const authHeader = req.get("Authorization");
-  console.log("[middleware/is-auth.js] authHeader:", authHeader);
+  // console.log("[middleware/is-auth.js] authHeader:", authHeader);
   if (!authHeader) {
     const err = new Error("Not authenticated");
     err.statusCode = 401;
@@ -17,7 +17,7 @@ exports.isAuthenticated = (req, res, next) => {
 
   try {
     decodedToken = jwt.verify(tokenFromHeader, "thisissecretkey");
-    console.log("[middleware/is-auth.js] decodedToken:", decodedToken);
+    // console.log("[middleware/is-auth.js] decodedToken:", decodedToken);
   } catch (error) {
     throw error;
   }

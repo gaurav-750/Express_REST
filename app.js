@@ -80,6 +80,17 @@ app.use((error, req, res, next) => {
   });
 });
 
-app.listen(8000, () => {
+const server = app.listen(8000, () => {
   console.log("Server is running on port 8000");
+});
+console.log("hehe.....");
+
+const io = require("socket.io")(server, {
+  cors: {
+    origin: "*",
+  },
+});
+
+io.on("connection", (socket) => {
+  console.log("Client connected!");
 });
