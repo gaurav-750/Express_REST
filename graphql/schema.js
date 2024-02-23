@@ -32,11 +32,11 @@ module.exports = buildSchema(`
         getUsers: [User]
         getPosts: [Post]
     }
-
-    type RootMutation{
+    
+    type RootMutation {
         createUser(userInput: UserInputData): User
     }
-
+   
     schema {
         query : RootQuery
         mutation: RootMutation
@@ -44,7 +44,12 @@ module.exports = buildSchema(`
    
 `);
 
-// type RootQuery{
-// getUsers: [User]
-// getPosts: [Post]
+//we can also define the query and mutation like this:
+// type Query {
+//     getUsers: [User]
+//     getPosts: [Post]
+// }
+
+// type Mutation {
+//     createUser(userInput: UserInputData): User
 // }

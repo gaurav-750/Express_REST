@@ -70,6 +70,23 @@ app.use(
     schema: require("./graphql/schema"),
     rootValue: require("./graphql/resolvers"),
     graphiql: true,
+
+    customFormatErrorFn(err) {
+      console.log("Inside formatError:", err);
+      if (!err.originalError) {
+        return err;
+      }
+
+      const data = err.originalError.data;
+      // const message = err.message || "An error occurred!";
+      const statusCode = err.originalError.statusCode || 500;
+
+      return {
+        // message: message,
+        status: statusCode,
+        data: data,
+      };
+    },
   })
 );
 
