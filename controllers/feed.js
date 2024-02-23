@@ -4,6 +4,8 @@ const Post = require("../models/post");
 const { removeImage } = require("../utils/image");
 const User = require("../models/user");
 
+let io = require("../socket");
+
 const ITEMS_PER_PAGE = 2;
 
 exports.getPosts = async (req, res, next) => {
@@ -13,6 +15,7 @@ exports.getPosts = async (req, res, next) => {
     const totalItems = await Post.find().countDocuments();
     const posts = await Post.find()
       .populate("creator")
+      .sort({ createdAt: -1 }) //sort in descending order
       .skip((currentPage - 1) * ITEMS_PER_PAGE)
       .limit(ITEMS_PER_PAGE);
 
@@ -69,6 +72,12 @@ exports.createPost = async (req, res, next) => {
 
     user.posts.push(post);
     await user.save();
+
+    //* now we'll tell all connected clients about the new post, hence their feed will be updated automatically
+    io.getIO().emit("posts", {
+      action: "create",
+      post: { ...post._doc, creator: { _id: req.userId, name: user.name } },
+    });
 
     res.status(201).json({
       message: "Post created successfully!",
@@ -132,7 +141,7 @@ exports.editPost = async (req, res, next) => {
   }
 
   try {
-    const post = await Post.findById(postId);
+    const post = await Post.findById(postId).populate("creator");
     if (!post) {
       const err = new Error("Could not find post");
       err.statusCode = 404;
@@ -140,7 +149,7 @@ exports.editPost = async (req, res, next) => {
     }
 
     //check if the user is the creator of the post, then only he can edit the post
-    if (post.creator.toString() !== req.userId.toString()) {
+    if (post.creator._id.toString() !== req.userId.toString()) {
       const err = new Error("You are not authorized to edit this post!");
       err.statusCode = 403;
       throw err;
@@ -154,9 +163,14 @@ exports.editPost = async (req, res, next) => {
     post.title = title;
     post.imageUrl = imageUrl;
     post.content = content;
-    await post.save();
+    const result = await post.save();
 
-    console.log("[controllers/feed.js/editPost] post:", post);
+    io.getIO().emit("posts", {
+      action: "update",
+      post: result,
+    });
+
+    console.log("[controllers/feed.js/editPost] post:", result);
     res.status(200).json({
       message: "Post updated successfully",
       post: post,
@@ -198,8 +212,13 @@ exports.deletePost = async (req, res, next) => {
     user.posts.pull(postId);
     result = await user.save();
 
-    console.log("[controllers/feed.js/deletePost] result:", result);
+    //! now we'll tell all connected clients about the deleted post, hence their feed will be updated automatically
+    io.getIO().emit("posts", {
+      action: "delete",
+      post: postId,
+    });
 
+    console.log("[controllers/feed.js/deletePost] result:", result);
     res.status(200).json({
       message: "Post deleted successfully",
     });
