@@ -3,6 +3,7 @@ const bodyParser = require("body-parser");
 const cors = require("cors");
 const multer = require("multer");
 const { v4: uuid4 } = require("uuid");
+const { graphqlHTTP } = require("express-graphql");
 
 const path = require("path");
 
@@ -63,8 +64,14 @@ app.use("/images", express.static(path.join(__dirname, "images")));
 //   next();
 // });
 
-app.use("/auth", require("./routes/auth"));
-app.use("/feed", require("./routes/feed"));
+app.use(
+  "/graphql",
+  graphqlHTTP({
+    schema: require("./graphql/schema"),
+    rootValue: require("./graphql/resolvers"),
+    graphiql: true,
+  })
+);
 
 //! error handling middleware
 app.use((error, req, res, next) => {
@@ -82,9 +89,4 @@ app.use((error, req, res, next) => {
 
 const server = app.listen(8000, () => {
   console.log("Server is running on port 8000");
-});
-
-const io = require("./socket").init(server);
-io.on("connection", (socket) => {
-  console.log("Client connected!");
 });
