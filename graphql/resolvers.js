@@ -1,5 +1,6 @@
 const User = require("../models/user");
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 
 const validator = require("validator");
 
@@ -27,7 +28,7 @@ module.exports = {
     //if there are errors
     if (errors.length > 0) {
       const error = new Error("Invalid input!");
-      error.data = errors;
+      error.data = errors; //adding the errors to the error object
       error.statusCode = 422;
       throw error;
     }
@@ -51,20 +52,38 @@ module.exports = {
     };
   },
 
-  getUsers: async function () {
-    const users = await User.find();
-    return users.map((user) => {
-      return { ...user._doc, _id: user._id.toString() };
-    });
-  },
+  login: async function ({ email, password }) {
+    const user = await User.findOne({ email: email });
+    console.log("user:", user);
 
-  getPosts: async function () {
-    return [
+    if (!user) {
+      const error = new Error("User not found!");
+      error.statusCode = 401;
+      throw error;
+    }
+
+    //user is there, now check the password
+    const isEqual = await bcrypt.compare(password, user.password);
+    if (!isEqual) {
+      const error = new Error("Password is incorrect!");
+      error.statusCode = 401;
+      throw error;
+    }
+
+    //if we reach here, the user is authenticated
+    //generate token
+    const token = jwt.sign(
       {
-        _id: "1",
-        title: "First Post",
-        content: "This is the content of the first post",
+        email: user.email,
+        userId: user._id.toString(),
       },
-    ];
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+
+    return {
+      token: token,
+      userId: user._id.toString(),
+    };
   },
 };

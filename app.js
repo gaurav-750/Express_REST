@@ -72,7 +72,7 @@ app.use(
     graphiql: true,
 
     customFormatErrorFn(err) {
-      console.log("Inside formatError:", err);
+      console.log("Inside formatError:", err.originalError);
       if (!err.originalError) {
         return err;
       }
@@ -82,7 +82,6 @@ app.use(
       const statusCode = err.originalError.statusCode || 500;
 
       return {
-        // message: message,
         status: statusCode,
         data: data,
       };
