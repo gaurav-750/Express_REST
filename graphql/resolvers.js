@@ -1,4 +1,6 @@
 const User = require("../models/user");
+const Post = require("../models/post");
+
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
@@ -84,6 +86,44 @@ module.exports = {
     return {
       token: token,
       userId: user._id.toString(),
+    };
+  },
+
+  createPost: async function ({ postInput, req }) {
+    const { title, content, imageUrl } = postInput;
+
+    const errors = [];
+    if (validator.isEmpty(title) || !validator.isLength(title, { min: 4 })) {
+      errors.push({ message: "Title must be atleast 4 chars!" });
+    }
+
+    if (
+      validator.isEmpty(content) ||
+      !validator.isLength(content, { min: 4 })
+    ) {
+      errors.push({ message: "Content must be atleast 4 chars!" });
+    }
+
+    if (errors.length > 0) {
+      const error = new Error("Invalid input!");
+      error.data = errors;
+      error.statusCode = 422;
+      throw error;
+    }
+
+    const post = await Post.create({
+      title: title,
+      content: content,
+      imageUrl: imageUrl,
+    });
+
+    //add post to user's posts
+
+    return {
+      ...post._doc,
+      _id: post._id.toString(),
+      createdAt: post.createdAt.toISOString(),
+      updatedAt: post.updatedAt.toISOString(),
     };
   },
 };

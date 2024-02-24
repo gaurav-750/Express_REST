@@ -78,11 +78,12 @@ app.use(
       }
 
       const data = err.originalError.data;
-      // const message = err.message || "An error occurred!";
+      const message = err.originalError.message || "An error occurred!";
       const statusCode = err.originalError.statusCode || 500;
 
       return {
         status: statusCode,
+        message: message,
         data: data,
       };
     },
