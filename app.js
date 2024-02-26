@@ -66,6 +66,8 @@ app.use("/images", express.static(path.join(__dirname, "images")));
 //   next();
 // });
 
+//middleware to check if the user is authenticated
+//if the user is authenticated, we set the isAuth property to true, else false
 app.use(isAuthenticated);
 
 app.use(

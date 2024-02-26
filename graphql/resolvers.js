@@ -89,8 +89,9 @@ module.exports = {
     };
   },
 
-  createPost: async function ({ postInput, req }) {
-    const { title, content, imageUrl } = postInput;
+  createPost: async function (args, req) {
+    const { title, content, imageUrl } = args.postInput;
+    // const { req } = context;
 
     console.log("req.isAuth:", req.isAuth);
     if (!req.isAuth) {
