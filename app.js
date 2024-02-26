@@ -7,6 +7,8 @@ const { graphqlHTTP } = require("express-graphql");
 
 const path = require("path");
 
+const { isAuthenticated } = require("./middleware/auth");
+
 //env variables
 require("dotenv").config();
 
@@ -63,6 +65,8 @@ app.use("/images", express.static(path.join(__dirname, "images")));
 
 //   next();
 // });
+
+app.use(isAuthenticated);
 
 app.use(
   "/graphql",

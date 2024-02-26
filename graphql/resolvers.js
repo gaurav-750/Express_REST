@@ -92,6 +92,13 @@ module.exports = {
   createPost: async function ({ postInput, req }) {
     const { title, content, imageUrl } = postInput;
 
+    console.log("req.isAuth:", req.isAuth);
+    if (!req.isAuth) {
+      const error = new Error("Not authenticated!");
+      error.statusCode = 401;
+      throw error;
+    }
+
     const errors = [];
     if (validator.isEmpty(title) || !validator.isLength(title, { min: 4 })) {
       errors.push({ message: "Title must be atleast 4 chars!" });
@@ -111,13 +118,24 @@ module.exports = {
       throw error;
     }
 
+    //also get the user
+    const user = await User.findById(req.userId);
+    if (!user) {
+      const error = new Error("Invalid user!");
+      error.statusCode = 401;
+      throw error;
+    }
+
     const post = await Post.create({
       title: title,
       content: content,
       imageUrl: imageUrl,
+      creator: user,
     });
 
     //add post to user's posts
+    user.posts.push(post);
+    await user.save();
 
     return {
       ...post._doc,
