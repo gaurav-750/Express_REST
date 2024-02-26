@@ -37,9 +37,13 @@ module.exports = buildSchema(`
         imageUrl: String!
     }
 
+    type PostData {
+        posts: [Post]!
+        totalPosts: Int!
+    }
+
     type RootQuery {
-        getUsers: [User]
-        getPosts: [Post]
+        getPosts: PostData!
     }
     
     type RootMutation {
