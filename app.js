@@ -8,6 +8,7 @@ const { graphqlHTTP } = require("express-graphql");
 const path = require("path");
 
 const { isAuthenticated } = require("./middleware/auth");
+const { removeImage } = require("./utils/image");
 
 //env variables
 require("dotenv").config();
@@ -69,6 +70,37 @@ app.use("/images", express.static(path.join(__dirname, "images")));
 //middleware to check if the user is authenticated
 //if the user is authenticated, we set the isAuth property to true, else false
 app.use(isAuthenticated);
+
+//this is a REST API endpoint to upload an image
+//As graphql does not support file upload, we will use REST API to upload the image
+app.put("/post-image", (req, res, next) => {
+  console.log("Inside /post-image");
+  if (!req.isAuth) {
+    const error = new Error("Not authenticated!");
+    error.statusCode = 401;
+    throw error;
+  }
+
+  if (!req.file) {
+    return res.status(200).json({ message: "No file provided!" });
+  }
+
+  console.log("🛑🛑 req.body", req.body);
+
+  //clear the previous image
+  if (req.body.oldPath) {
+    removeImage(req.body.oldPath);
+  }
+
+  //! windows path fix
+  const imageUrl = req.file.path.replace("\\", "/");
+
+  //send the file path (which would be a string) to the frontend
+  return res.status(201).json({
+    message: "File uploaded successfully!",
+    filePath: imageUrl,
+  });
+});
 
 app.use(
   "/graphql",
