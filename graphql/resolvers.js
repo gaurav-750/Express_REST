@@ -5,6 +5,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
 const validator = require("validator");
+const { removeImage } = require("../utils/image");
 
 module.exports = {
   createUser: async function (args, req) {
@@ -150,11 +151,11 @@ module.exports = {
     const page = args.page || 1;
     const PER_PAGE = 2;
 
-    if (!req.isAuth) {
-      const error = new Error("Not Authenticated.");
-      error.statusCode = 401;
-      throw error;
-    }
+    // if (!req.isAuth) {
+    //   const error = new Error("Not Authenticated.");
+    //   error.statusCode = 401;
+    //   throw error;
+    // }
 
     const totalPosts = await Post.find().countDocuments();
     const posts = await Post.find()
@@ -260,5 +261,41 @@ module.exports = {
       createdAt: updatedPost.createdAt.toISOString(),
       updatedAt: updatedPost.updatedAt.toISOString(),
     };
+  },
+
+  deletePost: async (args, req) => {
+    const { postId } = args;
+
+    if (!req.isAuth) {
+      const error = new Error("Not Authenticated.");
+      error.statusCode = 401;
+      throw error;
+    }
+
+    const post = await Post.findById(postId).populate("creator");
+    if (!post) {
+      const error = new Error("No Post Found!");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    //also check if the user is authorized to delete the post
+    if (post.creator._id.toString() !== req.userId.toString()) {
+      const error = new Error("Not Authorized!");
+      error.statusCode = 403;
+      throw error;
+    }
+
+    //remove the image from the server
+    removeImage(post.imageUrl);
+
+    await Post.findByIdAndDelete(postId);
+
+    //delete the post from the user's posts
+    const user = await User.findById(req.userId);
+    user.posts.pull(postId);
+    await user.save();
+
+    return true;
   },
 };
