@@ -200,4 +200,65 @@ module.exports = {
       updatedAt: post.updatedAt.toISOString(),
     };
   },
+
+  updatePost: async (args, req) => {
+    const { postId, postInput } = args;
+    const { title, content, imageUrl } = postInput;
+
+    //check if the user is authenticated
+    if (!req.isAuth) {
+      const error = new Error("Not Authenticated.");
+      error.statusCode = 401;
+      throw error;
+    }
+
+    const post = await Post.findById(postId).populate("creator");
+    if (!post) {
+      const error = new Error("No Post Found!");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    if (post.creator._id.toString() !== req.userId.toString()) {
+      const error = new Error("Not Authorized!");
+      error.statusCode = 403;
+      throw error;
+    }
+
+    //! Validation
+    const errors = [];
+    if (validator.isEmpty(title) || !validator.isLength(title, { min: 4 })) {
+      errors.push({ message: "Title must be atleast 4 chars!" });
+    }
+
+    if (
+      validator.isEmpty(content) ||
+      !validator.isLength(content, { min: 4 })
+    ) {
+      errors.push({ message: "Content must be atleast 4 chars!" });
+    }
+
+    if (errors.length > 0) {
+      const error = new Error("Invalid input!");
+      error.data = errors;
+      error.statusCode = 422;
+      throw error;
+    }
+
+    //now we can update the post
+    post.title = title;
+    post.content = content;
+    if (imageUrl !== "undefined") {
+      post.imageUrl = imageUrl;
+    }
+
+    const updatedPost = await post.save();
+
+    return {
+      ...updatedPost._doc,
+      _id: updatedPost._id.toString(),
+      createdAt: updatedPost.createdAt.toISOString(),
+      updatedAt: updatedPost.updatedAt.toISOString(),
+    };
+  },
 };
