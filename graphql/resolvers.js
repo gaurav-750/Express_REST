@@ -298,4 +298,49 @@ module.exports = {
 
     return true;
   },
+
+  user: async (args, req) => {
+    if (!req.isAuth) {
+      const error = new Error("Not Authenticated.");
+      error.statusCode = 401;
+      throw error;
+    }
+
+    const user = await User.findById(req.userId);
+    if (!user) {
+      const error = new Error("No User Found.");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    return {
+      ...user._doc,
+      _id: user._id.toString(),
+    };
+  },
+
+  updateStatus: async (args, req) => {
+    const { status } = args;
+
+    if (!req.isAuth) {
+      const error = new Error("Not Authenticated.");
+      error.statusCode = 401;
+      throw error;
+    }
+
+    const user = await User.findById(req.userId);
+    if (!user) {
+      const error = new Error("No User Found.");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    user.status = status;
+    await user.save();
+
+    return {
+      ...user._doc,
+      _id: user._id.toString(),
+    };
+  },
 };
