@@ -44,6 +44,7 @@ module.exports = buildSchema(`
 
     type RootQuery {
         getPosts(page: Int): PostData!
+        getPost(postId: ID!): Post!
     }
     
     type RootMutation {
